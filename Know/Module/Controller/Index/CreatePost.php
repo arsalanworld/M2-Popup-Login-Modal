@@ -53,31 +53,6 @@ class CreatePost extends \Magento\Customer\Controller\Account\CreatePost
 
     private JsonFactory $resultJsonFactory;
 
-    /**
-     * @param Context $context
-     * @param Session $customerSession
-     * @param ScopeConfigInterface $scopeConfig
-     * @param StoreManagerInterface $storeManager
-     * @param AccountManagementInterface $accountManagement
-     * @param Address $addressHelper
-     * @param UrlFactory $urlFactory
-     * @param FormFactory $formFactory
-     * @param SubscriberFactory $subscriberFactory
-     * @param RegionInterfaceFactory $regionDataFactory
-     * @param AddressInterfaceFactory $addressDataFactory
-     * @param CustomerInterfaceFactory $customerDataFactory
-     * @param CustomerUrl $customerUrl
-     * @param Registration $registration
-     * @param Escaper $escaper
-     * @param CustomerExtractor $customerExtractor
-     * @param DataObjectHelper $dataObjectHelper
-     * @param AccountRedirect $accountRedirect
-     * @param CustomerRepository $customerRepository
-     * @param JsonFactory $resultJsonFactory
-     * @param Validator $formKeyValidator
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
-     */
     public function __construct(
         Context $context,
         Session $customerSession,
@@ -115,7 +90,7 @@ class CreatePost extends \Magento\Customer\Controller\Account\CreatePost
             'message' => ''
         ];
         if ($this->session->isLoggedIn() || !$this->registration->isAllowed()) {
-            $response['redirect'] = $this->urlModel->getUrl('customer/account/');
+            $response['redirect'] = $this->urlModel->getUrl('customer/account');
             $resultJson->setData($response);
             return $resultJson;
         }
@@ -123,8 +98,7 @@ class CreatePost extends \Magento\Customer\Controller\Account\CreatePost
         if (!$this->getRequest()->isPost()
             || !$this->formKeyValidator->validate($this->getRequest())
         ) {
-            $response['redirect'] = $this->urlModel->getUrl('customer/account/create', ['_secure' => true]);
-            $response['message'] = __('Invalid Request');
+            $response['message'] = __('Invalid data provided.');
             $resultJson->setData($response);
             return $resultJson;
         }
@@ -151,6 +125,8 @@ class CreatePost extends \Magento\Customer\Controller\Account\CreatePost
                 ['account_controller' => $this, 'customer' => $customer]
             );
             $confirmationStatus = $this->accountManagement->getConfirmationStatus($customer->getId());
+            $url = $this->urlModel->getUrl('customer/account/index', ['_secure' => true]);
+            $response['redirect'] = $url;
             if ($confirmationStatus === AccountManagementInterface::ACCOUNT_CONFIRMATION_REQUIRED) {
                 $this->messageManager->addComplexSuccessMessage(
                     'confirmAccountSuccessMessage',
@@ -158,17 +134,15 @@ class CreatePost extends \Magento\Customer\Controller\Account\CreatePost
                         'url' => $this->customerUrl->getEmailConfirmationUrl($customer->getEmail()),
                     ]
                 );
-                $response['redirect'] = $this->urlModel->getUrl('customer/account/index', ['_secure' => true]);
                 $resultJson->setData($response);
                 return $resultJson;
             } else {
                 $this->session->setCustomerDataAsLoggedIn($customer);
-                $response['message'] = __('Thank you for registering with %1.', $this->storeManager->getStore()->getFrontendName());
-                $response['redirect'] = $this->urlModel->getUrl('customer/account');
+                $this->messageManager->addMessage($this->getMessageManagerSuccessMessage());
                 $requestedRedirect = $this->accountRedirect->getRedirectCookie();
                 if (!$this->scopeConfig->getValue('customer/startup/redirect_dashboard') && $requestedRedirect) {
-                    $response['redirect'] = $this->_redirect->success($requestedRedirect);
                     $this->accountRedirect->clearRedirectCookie();
+                    $response['redirect'] = $this->_redirect->success($requestedRedirect);
                     $resultJson->setData($response);
                     return $resultJson;
                 }
@@ -229,5 +203,38 @@ class CreatePost extends \Magento\Customer\Controller\Account\CreatePost
             );
         }
         return $this->cookieMetadataFactory;
+    }
+
+    /**
+     * Retrieve success message manager message
+     *
+     * @return MessageInterface
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function getMessageManagerSuccessMessage(): MessageInterface
+    {
+        if ($this->addressHelper->isVatValidationEnabled()) {
+            if ($this->addressHelper->getTaxCalculationAddressType() == Address::TYPE_SHIPPING) {
+                $identifier = 'customerVatShippingAddressSuccessMessage';
+            } else {
+                $identifier = 'customerVatBillingAddressSuccessMessage';
+            }
+
+            $message = $this->messageManager
+                ->createMessage(MessageInterface::TYPE_SUCCESS, $identifier)
+                ->setData(
+                    [
+                        'url' => $this->urlModel->getUrl('customer/address/edit'),
+                    ]
+                );
+        } else {
+            $message = $this->messageManager
+                ->createMessage(MessageInterface::TYPE_SUCCESS)
+                ->setText(
+                    __('Thank you for registering with %1.', $this->storeManager->getStore()->getFrontendName())
+                );
+        }
+
+        return $message;
     }
 }

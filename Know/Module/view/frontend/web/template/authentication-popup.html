@@ -100,12 +100,14 @@
         <div class="btn-toolbar">
             <div class="secondary">
                 <button class="action cancel secondary"
-                        data-bind="attr: { type: 'button', title: 'Cancel' }, click: function () { isRegistrationFormVisible(false); }">
-                    <span data-bind="text: 'Cancel'"></span>
-                </button>
+                    data-bind="attr: {
+                        type: 'button',
+                        title: 'Cancel'
+                    }, click: function() {
+                        isRegistrationFormVisible(false);
+                    }"><span data-bind="text: 'Cancel'"></span></button>
             </div>
         </div>
-        <div class="block" id="create-customer-popup" aria-labelledby="block-new-customer-heading" data-bind="html: formData()">
-        </div>
+        <div class="block block-new-customer" id="create-customer-popup" data-bind="html: formData()"></div>
     </if>
 </div>

@@ -2,6 +2,7 @@
 namespace Know\Module\Controller\Index;
 
 use Magento\Framework\App\ActionInterface;
+use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\View\Result\PageFactory;
 
@@ -9,25 +10,26 @@ class Index implements ActionInterface
 {
     private PageFactory $pageFactory;
 
-    private JsonFactory $resultJsonFactory;
+    private JsonFactory $jsonFactory;
 
-    public function __construct(PageFactory $pageFactory, JsonFactory $resultJsonFactory)
+    public function __construct(PageFactory $pageFactory, JsonFactory $jsonFactory)
     {
         $this->pageFactory = $pageFactory;
-        $this->resultJsonFactory = $resultJsonFactory;
+        $this->jsonFactory = $jsonFactory;
     }
 
     public function execute()
     {
         $resultPage = $this->pageFactory->create();
-        $jsonResult = $this->resultJsonFactory->create();
+        $html = $resultPage->getLayout()
+            ->createBlock(\Know\Module\Block\Form\Register::class)
+            ->setTemplate('Magento_Customer::form/register.phtml')
+            ->toHtml();
 
-        $jsonResult->setData([
-            'data' => $resultPage->getLayout()
-                ->createBlock(\Know\Module\Block\Form\Register::class)
-                ->setTemplate('Magento_Customer::form/register.phtml')
-                ->toHtml()
+        $resultJson = $this->jsonFactory->create();
+        $resultJson->setData([
+            'data' => $html
         ]);
-        return $jsonResult;
+        return $resultJson;
     }
 }

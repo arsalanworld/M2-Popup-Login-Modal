@@ -6,12 +6,13 @@ define([
     'use strict';
 
     return Component.extend({
+
         initialize: function () {
             this._super();
 
             let self = this;
             $(document).on('submit', '#create-customer-popup form', function () {
-                let registrationFormEl = $('#create-customer-popup form');
+                let registrationFormEl = $(this);
                 $.post({
                     data: registrationFormEl.serializeArray(),
                     url: registrationFormEl.attr('action'),
@@ -21,22 +22,24 @@ define([
                         }
                     },
                     complete: function (response) {
-                        // Remove disabled attribute from submit button
                         $('#create-customer-popup form .action.submit').removeAttr('disabled');
+                        let responseObj = response.responseJSON;
+                        if (!responseObj.redirect && responseObj.message) {
+                            alert(responseObj.message);
+                            return;
+                        }
+
                         self.isRegistrationFormVisible(false);
                     }
-                });
+                })
             });
         },
 
-        /**
-         * @return {exports.initObservable}
-         */
         initObservable: function () {
             this._super()
                 .observe({
                     isRegistrationFormVisible: false,
-                    formData: false
+                    formData: ""
                 });
 
             let self = this;
@@ -45,7 +48,7 @@ define([
                     FetchRegistrationForm().done(function (response) {
                         self.formData(response.data);
                         $('body').trigger('contentUpdated');
-                        $('#create-customer-popup form').attr('onsubmit','return false;');
+                        $('#create-customer-popup form').attr('onsubmit', 'return false');
                     });
                 }
             }, this);

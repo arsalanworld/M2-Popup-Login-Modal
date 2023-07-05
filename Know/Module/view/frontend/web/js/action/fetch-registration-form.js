@@ -1,8 +1,7 @@
 define([
     'mage/url',
-    'jquery',
     'mage/storage'
-], function (mageUrl, $, storageApi) {
+], function (mageUrl, storageApi) {
     'use strict';
 
     return function () {
